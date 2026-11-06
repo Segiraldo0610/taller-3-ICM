@@ -1,0 +1,13 @@
+*.iml
+.gradle/
+.idea/
+.kotlin/
+build/
+*/build/
+local.properties
+secrets.properties
+app/google-services.json
+captures/
+*.apk
+*.zip
+
