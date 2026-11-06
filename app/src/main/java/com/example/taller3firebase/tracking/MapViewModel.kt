@@ -54,8 +54,6 @@ class MapViewModel(
         if (enabled) startTracking() else stopTracking()
     }
 
-    fun clearMessage() = _state.update { it.copy(message = null) }
-
     fun logout() {
         viewModelScope.launch {
             disconnectFromFirestore()

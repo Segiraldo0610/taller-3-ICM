@@ -29,5 +29,14 @@
     <string name="error_invalid_credentials">Correo o contraseña incorrectos.</string>
     <string name="error_authentication">No fue posible completar la autenticación.</string>
     <string name="error_profile_save">No fue posible guardar el perfil. Intenta nuevamente.</string>
+    <string name="map_title">Usuarios en línea</string>
+    <string name="connected">Conectado</string>
+    <string name="disconnected">No conectado</string>
+    <string name="logout">Cerrar sesión</string>
+    <string name="location_permission_required">Permite el acceso a la ubicación para conectarte.</string>
+    <string name="location_unavailable">No fue posible obtener la ubicación actual.</string>
+    <string name="database_error">No fue posible sincronizar los usuarios. Revisa tu conexión.</string>
+    <string name="firebase_setup_title">Falta conectar Firebase</string>
+    <string name="firebase_setup_message">Agrega app/google-services.json y vuelve a sincronizar el proyecto. Consulta CONFIGURACION_FIREBASE.md.</string>
 </resources>
 
