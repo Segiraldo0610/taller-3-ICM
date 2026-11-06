@@ -1,5 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">En Ruta</string>
+    <string name="login_subtitle">Comparte tu recorrido en tiempo real</string>
+    <string name="register_subtitle">Crea tu perfil para comenzar</string>
+    <string name="name_label">Nombre</string>
+    <string name="identification_label">Número de identificación</string>
+    <string name="email_label">Correo electrónico</string>
+    <string name="phone_label">Teléfono</string>
+    <string name="password_label">Contraseña</string>
+    <string name="confirm_password_label">Confirmar contraseña</string>
+    <string name="login_action">Ingresar</string>
+    <string name="register_action">Registrarme</string>
+    <string name="go_to_register">¿No tienes cuenta? Regístrate</string>
+    <string name="go_to_login">¿Ya tienes cuenta? Ingresa</string>
+    <string name="show_password">Mostrar contraseña</string>
+    <string name="hide_password">Ocultar contraseña</string>
+    <string name="take_profile_photo">Tomar foto de perfil</string>
+    <string name="retake_profile_photo">Cambiar foto de perfil</string>
+    <string name="profile_photo_description">Fotografía de perfil</string>
+    <string name="error_name_required">Ingresa tu nombre.</string>
+    <string name="error_identification_required">Ingresa tu número de identificación.</string>
+    <string name="error_email_invalid">Ingresa un correo electrónico válido.</string>
+    <string name="error_password_required">Ingresa tu contraseña.</string>
+    <string name="error_password_too_short">La contraseña debe tener al menos seis caracteres.</string>
+    <string name="error_passwords_do_not_match">Las contraseñas no coinciden.</string>
+    <string name="error_phone_required">Ingresa tu teléfono.</string>
+    <string name="error_photo_required">Debes tomar una fotografía de perfil.</string>
+    <string name="error_invalid_credentials">Correo o contraseña incorrectos.</string>
+    <string name="error_authentication">No fue posible completar la autenticación.</string>
+    <string name="error_profile_save">No fue posible guardar el perfil. Intenta nuevamente.</string>
 </resources>
 
