@@ -17,7 +17,6 @@ class SessionViewModel(
 
     override fun onCleared() {
         listener.close()
-        super.onCleared()
     }
 }
 

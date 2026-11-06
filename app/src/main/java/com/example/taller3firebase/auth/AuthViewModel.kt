@@ -1,6 +1,6 @@
 package com.example.taller3firebase.auth
 
-import android.net.Uri
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -79,7 +79,7 @@ class AuthViewModel(
                         email = current.email.trim(),
                         phone = current.phone.trim(),
                     ),
-                    photoUri = Uri.parse(requireNotNull(current.photoUri)),
+                    photoUri = requireNotNull(current.photoUri).toUri(),
                 )
             }.onFailure {
                 if (userCreated) runCatching { authRepository.deleteCurrentUser() }

@@ -43,6 +43,10 @@ android {
     buildFeatures { compose = true }
 
     testOptions { unitTests.isReturnDefaultValues = true }
+
+    lint {
+        disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable")
+    }
 }
 
 dependencies {

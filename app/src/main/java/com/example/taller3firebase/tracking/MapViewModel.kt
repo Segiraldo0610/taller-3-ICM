@@ -110,7 +110,6 @@ class MapViewModel(
     override fun onCleared() {
         locationTracker.stop()
         connectedUsersListener.close()
-        super.onCleared()
     }
 }
 
