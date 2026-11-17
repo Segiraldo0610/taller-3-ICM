@@ -15,6 +15,9 @@ val secrets = Properties().apply {
     if (secretsFile.exists()) secretsFile.inputStream().use(::load)
 }
 
+fun String.asBuildConfigString(): String =
+    "\"${replace("\\", "\\\\").replace("\"", "\\\"")}\""
+
 android {
     namespace = "com.example.taller3firebase"
     compileSdk { version = release(37) }
@@ -27,6 +30,16 @@ android {
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["MAPS_API_KEY"] = secrets.getProperty("MAPS_API_KEY", "")
+        buildConfigField(
+            "String",
+            "CLOUDINARY_CLOUD_NAME",
+            secrets.getProperty("CLOUDINARY_CLOUD_NAME", "").asBuildConfigString(),
+        )
+        buildConfigField(
+            "String",
+            "CLOUDINARY_UPLOAD_PRESET",
+            secrets.getProperty("CLOUDINARY_UPLOAD_PRESET", "").asBuildConfigString(),
+        )
     }
 
     buildTypes {
@@ -40,7 +53,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 
     testOptions { unitTests.isReturnDefaultValues = true }
 
@@ -68,12 +84,12 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:35.1.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
-    implementation("com.google.firebase:firebase-storage")
 
     implementation("com.google.maps.android:maps-compose:8.4.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation("io.coil-kt.coil3:coil-compose:3.5.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.5.0")
+    implementation("com.cloudinary:cloudinary-android:3.0.2")
 
     testImplementation("junit:junit:4.13.2")
     debugImplementation("androidx.compose.ui:ui-tooling")
