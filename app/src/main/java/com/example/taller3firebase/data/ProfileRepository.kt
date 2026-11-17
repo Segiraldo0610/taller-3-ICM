@@ -3,7 +3,6 @@ package com.example.taller3firebase.data
 import android.net.Uri
 import com.example.taller3firebase.domain.UserProfile
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
 
 interface ProfileRepository {
     suspend fun createProfile(profile: UserProfile, photoUri: Uri)
@@ -11,25 +10,11 @@ interface ProfileRepository {
 
 class FirebaseProfileRepository(
     private val firestore: FirebaseFirestore,
-    private val storage: FirebaseStorage,
+    private val photoUploader: PhotoUploader,
 ) : ProfileRepository {
     override suspend fun createProfile(profile: UserProfile, photoUri: Uri) {
-        val photoReference = storage.reference.child("profile_photos/${profile.uid}.jpg")
-        photoReference.putFile(photoUri).awaitResult()
-        val photoUrl = photoReference.downloadUrl.awaitResult().toString()
-
-        val document = mapOf(
-            "uid" to profile.uid,
-            "name" to profile.name,
-            "identification" to profile.identification,
-            "email" to profile.email,
-            "phone" to profile.phone,
-            "photoUrl" to photoUrl,
-            "latitude" to null,
-            "longitude" to null,
-            "connected" to false,
-            "route" to emptyList<Map<String, Any>>(),
-        )
+        val photoUrl = photoUploader.upload(profile.uid, photoUri)
+        val document = profile.toFirestoreDocument(photoUrl)
         firestore.collection(USERS_COLLECTION).document(profile.uid).set(document).awaitResult()
     }
 
@@ -37,4 +22,17 @@ class FirebaseProfileRepository(
         const val USERS_COLLECTION = "users"
     }
 }
+
+internal fun UserProfile.toFirestoreDocument(photoUrl: String): Map<String, Any?> = mapOf(
+    "uid" to uid,
+    "name" to name,
+    "identification" to identification,
+    "email" to email,
+    "phone" to phone,
+    "photoUrl" to photoUrl,
+    "latitude" to null,
+    "longitude" to null,
+    "connected" to false,
+    "route" to emptyList<Map<String, Any>>(),
+)
 
