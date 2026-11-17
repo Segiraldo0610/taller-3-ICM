@@ -1,4 +1,4 @@
-# Configuración de Firebase y Google Maps
+# Configuración de Firebase, Cloudinary y Google Maps
 
 El código compila sin credenciales y muestra una pantalla de configuración. Para ejecutar todas las funciones se requieren los siguientes pasos una sola vez.
 
@@ -9,33 +9,51 @@ El código compila sin credenciales y muestra una pantalla de configuración. Pa
 3. Descargue `google-services.json` y cópielo en `app/google-services.json`.
 4. En **Authentication > Sign-in method**, habilite **Correo electrónico/contraseña**.
 5. En **Firestore Database**, cree la base de datos. Para una demostración puede elegir la región más cercana disponible.
-6. En **Storage**, cree el bucket predeterminado.
-7. Publique el contenido de `firestore.rules` en **Firestore Database > Rules**.
-8. Publique el contenido de `storage.rules` en **Storage > Rules**.
+6. Publique el contenido de `firestore.rules` en **Firestore Database > Rules**.
 
 También se pueden desplegar las reglas mediante Firebase CLI desde la raíz:
 
 ```text
 firebase login
 firebase use --add
-firebase deploy --only firestore:rules,storage
+firebase deploy --only firestore:rules
 ```
 
-## 2. Google Maps
+## 2. Cloudinary para fotografías
+
+Cloudinary reemplaza Firebase Storage y permite realizar la demostración sin activar un plan de pago de Firebase.
+
+1. Cree una cuenta gratuita en <https://cloudinary.com/> y verifique el correo electrónico.
+2. En el panel de Cloudinary copie el valor **Cloud name**.
+3. Abra **Settings > Upload > Upload presets** y cree un preset.
+4. Configure el preset con **Signing mode: Unsigned**. Como protección adicional puede limitar los formatos a `jpg`, `jpeg`, `png` y `webp`.
+5. Copie `secrets.properties.example` como `secrets.properties` en la raíz del proyecto.
+6. Escriba el `cloud_name` y el nombre del preset unsigned:
+
+```text
+CLOUDINARY_CLOUD_NAME=SU_CLOUD_NAME
+CLOUDINARY_UPLOAD_PRESET=SU_PRESET_UNSIGNED
+```
+
+No agregue `api_key` ni `api_secret` a la aplicación. La foto se sube directamente desde Android mediante el preset unsigned y Firestore guarda únicamente la URL HTTPS resultante.
+
+## 3. Google Maps
 
 1. Abra Google Cloud Console para el mismo proyecto.
 2. Habilite **Maps SDK for Android**.
 3. Cree una API key y restrínjala a aplicaciones Android.
 4. Restrinja el paquete a `com.example.taller3firebase` y agregue la huella SHA-1 de depuración.
-5. Copie `secrets.properties.example` como `secrets.properties` y escriba:
+5. En el mismo archivo `secrets.properties` escriba:
 
 ```text
 MAPS_API_KEY=SU_API_KEY_REAL
 ```
 
+Cloudinary evita la tarjeta para el almacenamiento de fotografías. Google Maps es un servicio separado y puede solicitar una cuenta de facturación para habilitar Maps SDK for Android.
+
 No suba `google-services.json` ni `secrets.properties` a un repositorio público; ambos están incluidos en `.gitignore`.
 
-## 3. Prueba con dos usuarios
+## 4. Prueba con dos usuarios
 
 1. Instale el APK en dos emuladores o teléfonos con Google Play Services.
 2. Registre una cuenta diferente en cada dispositivo y tome una fotografía de perfil.

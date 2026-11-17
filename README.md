@@ -6,7 +6,7 @@ Aplicación Android mono-usuario para registro, autenticación y visualización 
 
 - Registro e ingreso con Firebase Authentication.
 - Perfil con nombre, identificación, correo, teléfono y fotografía tomada con cámara.
-- Fotografías en Firebase Storage y perfiles/ubicaciones en Cloud Firestore.
+- Fotografías en Cloudinary mediante un preset unsigned y perfiles/ubicaciones en Cloud Firestore.
 - Switch Conectado/No conectado que inicia o detiene Fused Location.
 - Consulta en tiempo real de máximo 100 usuarios conectados.
 - Marcadores personalizados con foto o inicial; no se usan marcadores predeterminados.
@@ -18,7 +18,7 @@ Aplicación Android mono-usuario para registro, autenticación y visualización 
 ## Estructura principal
 
 - `auth/`: estado, ViewModel y pantalla de registro/ingreso.
-- `data/`: Firebase Auth, Firestore, Storage y Fused Location.
+- `data/`: Firebase Auth, Firestore, Cloudinary y Fused Location.
 - `tracking/`: estado y lógica del seguimiento.
 - `map/`: mapa, capas, marcadores y polylines.
 - `navigation/`: rutas y `NavDisplay` de Navigation 3.
@@ -26,7 +26,7 @@ Aplicación Android mono-usuario para registro, autenticación y visualización 
 
 ## Puesta en marcha
 
-Siga [CONFIGURACION_FIREBASE.md](CONFIGURACION_FIREBASE.md), sincronice Gradle y ejecute `app` en un teléfono o emulador con Google Play Services.
+Siga [CONFIGURACION_FIREBASE.md](CONFIGURACION_FIREBASE.md), configure Firebase, Cloudinary y Google Maps, sincronice Gradle y ejecute `app` en un teléfono o emulador con Google Play Services.
 
 ## Verificación
 
