@@ -38,5 +38,30 @@ class MapRenderLogicTest {
     fun `blank names use question mark as marker initial`() {
         assertEquals("?", MapRenderLogic.markerInitial(" "))
     }
+
+    @Test
+    fun `current user center uses the current profile coordinates`() {
+        val current = UserProfile(
+            uid = "samuel",
+            name = "Samuel",
+            connected = true,
+            latitude = 4.628,
+            longitude = -74.064,
+        )
+        val other = UserProfile(
+            uid = "diego",
+            name = "Diego",
+            connected = true,
+            latitude = 4.7,
+            longitude = -74.0,
+        )
+
+        val layers = MapRenderLogic.layers(listOf(other, current), "samuel")
+
+        assertEquals(
+            MapCoordinate(latitude = 4.628, longitude = -74.064),
+            MapRenderLogic.currentUserCenter(layers),
+        )
+    }
 }
 

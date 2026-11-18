@@ -3,17 +3,15 @@ package com.example.taller3firebase.map
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,29 +23,47 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import coil3.compose.AsyncImage
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import coil3.BitmapImage
+import coil3.SingletonImageLoader
+import coil3.request.ImageRequest
+import coil3.request.SuccessResult
+import coil3.request.allowHardware
 import com.example.taller3firebase.R
 import com.example.taller3firebase.tracking.MapUiState
 import com.example.taller3firebase.tracking.TrackingMessage
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MarkerComposable
-import com.google.maps.android.compose.Polyline
-import com.google.maps.android.compose.rememberCameraPositionState
-import com.google.maps.android.compose.rememberUpdatedMarkerState
+import org.osmdroid.config.Configuration
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.CustomZoomButtonsController
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.CopyrightOverlay
+import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.Polyline
+
+private const val OSM_USER_AGENT = "EnRutaTaller3/1.0 (aplicacion academica Android)"
+private const val OSM_PREFERENCES = "osmdroid"
+private const val INITIAL_ZOOM = 13.0
+private const val TRACKING_ZOOM = 16.0
+private const val BOGOTA_LATITUDE = 4.6486
+private const val BOGOTA_LONGITUDE = -74.1058
+private val OTHER_USER_COLOR = Color(0xFFE8590C)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,8 +74,29 @@ fun MapScreen(
     onLogout: () -> Unit,
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val layers = MapRenderLogic.layers(state.connectedUsers, state.currentUserId)
-    val cameraPositionState = rememberCameraPositionState()
+    val currentCenter = MapRenderLogic.currentUserCenter(layers)
+    val profilePhotos = remember { mutableStateMapOf<String, Bitmap>() }
+    val currentUserColor = MaterialTheme.colorScheme.primary.toArgb()
+    val markerBackgroundColor = MaterialTheme.colorScheme.primaryContainer.toArgb()
+    val markerTextColor = MaterialTheme.colorScheme.onPrimaryContainer.toArgb()
+    val otherUserColor = OTHER_USER_COLOR.toArgb()
+
+    val mapView = remember {
+        Configuration.getInstance().apply {
+            load(context, context.getSharedPreferences(OSM_PREFERENCES, Context.MODE_PRIVATE))
+            userAgentValue = OSM_USER_AGENT
+        }
+        MapView(context).apply {
+            setTileSource(TileSourceFactory.MAPNIK)
+            setMultiTouchControls(true)
+            zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
+            controller.setZoom(INITIAL_ZOOM)
+            controller.setCenter(GeoPoint(BOGOTA_LATITUDE, BOGOTA_LONGITUDE))
+        }
+    }
+
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { permissions ->
@@ -68,13 +105,48 @@ fun MapScreen(
         onTrackingChange(granted, granted)
     }
 
-    val currentLayer = layers.firstOrNull(MapUserLayer::isCurrentUser)
-    LaunchedEffect(currentLayer?.profile?.latitude, currentLayer?.profile?.longitude) {
-        val latitude = currentLayer?.profile?.latitude ?: return@LaunchedEffect
-        val longitude = currentLayer.profile.longitude ?: return@LaunchedEffect
-        cameraPositionState.animate(
-            CameraUpdateFactory.newLatLngZoom(LatLng(latitude, longitude), 16f),
-        )
+    val photoUrls = layers.map(MapUserLayer::profile)
+        .map { it.photoUrl }
+        .filter(String::isNotBlank)
+        .distinct()
+    LaunchedEffect(photoUrls) {
+        photoUrls.forEach { photoUrl ->
+            if (profilePhotos[photoUrl] == null) {
+                val result = runCatching {
+                    SingletonImageLoader.get(context).execute(
+                        ImageRequest.Builder(context)
+                            .data(photoUrl)
+                            .size(160)
+                            .allowHardware(false)
+                            .build(),
+                    )
+                }.getOrNull() as? SuccessResult
+                val bitmap = (result?.image as? BitmapImage)?.bitmap
+                if (bitmap != null) profilePhotos[photoUrl] = bitmap
+            }
+        }
+    }
+
+    DisposableEffect(lifecycleOwner, mapView) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> mapView.onResume()
+                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            mapView.onDetach()
+        }
+    }
+
+    LaunchedEffect(currentCenter) {
+        currentCenter?.let { center ->
+            mapView.controller.setZoom(TRACKING_ZOOM)
+            mapView.controller.animateTo(GeoPoint(center.latitude, center.longitude))
+        }
     }
 
     Scaffold(
@@ -124,33 +196,56 @@ fun MapScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
-            GoogleMap(
-                modifier = Modifier.fillMaxSize(),
-                cameraPositionState = cameraPositionState,
-            ) {
-                layers.forEach { layer ->
-                    val latitude = layer.profile.latitude ?: return@forEach
-                    val longitude = layer.profile.longitude ?: return@forEach
-                    MarkerComposable(
-                        keys = arrayOf<Any>(layer.profile.photoUrl, layer.profile.name, latitude, longitude),
-                        state = rememberUpdatedMarkerState(LatLng(latitude, longitude)),
-                        title = layer.profile.name,
-                    ) {
-                        ProfilePhotoMarker(
-                            photoUrl = layer.profile.photoUrl,
-                            name = layer.profile.name,
-                            isCurrentUser = layer.isCurrentUser,
+            AndroidView(
+                factory = { mapView },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clipToBounds(),
+                update = { map ->
+                    map.overlays.clear()
+                    map.overlays.add(CopyrightOverlay(map.context))
+
+                    layers.asReversed().forEach { layer ->
+                        if (layer.route.size >= 2) {
+                            map.overlays.add(
+                                Polyline(map).apply {
+                                    outlinePaint.color = if (layer.isCurrentUser) currentUserColor else otherUserColor
+                                    outlinePaint.strokeWidth = if (layer.isCurrentUser) 12f else 8f
+                                    setPoints(layer.route.map { point -> GeoPoint(point.latitude, point.longitude) })
+                                },
+                            )
+                        }
+                    }
+
+                    layers.asReversed().forEach { layer ->
+                        val latitude = layer.profile.latitude ?: return@forEach
+                        val longitude = layer.profile.longitude ?: return@forEach
+                        map.overlays.add(
+                            Marker(map).apply {
+                                position = GeoPoint(latitude, longitude)
+                                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                                title = layer.profile.name
+                                icon = ProfileMarkerIconFactory.create(
+                                    context = map.context,
+                                    photo = profilePhotos[layer.profile.photoUrl],
+                                    initial = MapRenderLogic.markerInitial(layer.profile.name),
+                                    isCurrentUser = layer.isCurrentUser,
+                                    currentUserColor = currentUserColor,
+                                    otherUserColor = otherUserColor,
+                                    backgroundColor = markerBackgroundColor,
+                                    textColor = markerTextColor,
+                                )
+                                setOnMarkerClickListener { marker, currentMap ->
+                                    marker.showInfoWindow()
+                                    currentMap.controller.animateTo(marker.position)
+                                    true
+                                }
+                            },
                         )
                     }
-                    if (layer.route.size >= 2) {
-                        Polyline(
-                            points = layer.route.map { LatLng(it.latitude, it.longitude) },
-                            color = if (layer.isCurrentUser) MaterialTheme.colorScheme.primary else Color(0xFFE8590C),
-                            width = if (layer.isCurrentUser) 12f else 8f,
-                        )
-                    }
-                }
-            }
+                    map.invalidate()
+                },
+            )
 
             state.message?.let { message ->
                 Text(
@@ -167,44 +262,6 @@ fun MapScreen(
     }
 }
 
-@Composable
-private fun ProfilePhotoMarker(
-    modifier: Modifier = Modifier,
-    photoUrl: String,
-    name: String,
-    isCurrentUser: Boolean,
-) {
-    Box(
-        modifier = modifier
-            .size(if (isCurrentUser) 64.dp else 54.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primaryContainer)
-            .border(
-                width = if (isCurrentUser) 4.dp else 3.dp,
-                color = if (isCurrentUser) MaterialTheme.colorScheme.primary else Color(0xFFE8590C),
-                shape = CircleShape,
-            ),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = MapRenderLogic.markerInitial(name),
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
-        )
-        if (photoUrl.isNotBlank()) {
-            AsyncImage(
-                model = photoUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(4.dp)
-                    .clip(CircleShape),
-            )
-        }
-    }
-}
-
 private fun hasLocationPermission(context: Context): Boolean =
     ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
         ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
@@ -214,4 +271,3 @@ private fun TrackingMessage.stringRes(): Int = when (this) {
     TrackingMessage.LOCATION_UNAVAILABLE -> R.string.location_unavailable
     TrackingMessage.DATABASE_ERROR -> R.string.database_error
 }
-

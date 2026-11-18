@@ -9,6 +9,11 @@ data class MapUserLayer(
     val route: List<RoutePoint>,
 )
 
+data class MapCoordinate(
+    val latitude: Double,
+    val longitude: Double,
+)
+
 object MapRenderLogic {
     fun layers(users: List<UserProfile>, currentUserId: String): List<MapUserLayer> = users
         .filter(UserProfile::hasLocation)
@@ -22,5 +27,14 @@ object MapRenderLogic {
         }
 
     fun markerInitial(name: String): String = name.trim().firstOrNull()?.uppercase() ?: "?"
+
+    fun currentUserCenter(layers: List<MapUserLayer>): MapCoordinate? = layers
+        .firstOrNull(MapUserLayer::isCurrentUser)
+        ?.profile
+        ?.let { profile ->
+            val latitude = profile.latitude ?: return@let null
+            val longitude = profile.longitude ?: return@let null
+            MapCoordinate(latitude = latitude, longitude = longitude)
+        }
 }
 
