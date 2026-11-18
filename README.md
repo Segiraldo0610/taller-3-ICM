@@ -9,6 +9,7 @@ Aplicación Android mono-usuario para registro, autenticación y visualización 
 - Fotografías en Cloudinary mediante un preset unsigned y perfiles/ubicaciones en Cloud Firestore.
 - Switch Conectado/No conectado que inicia o detiene Fused Location.
 - Consulta en tiempo real de máximo 100 usuarios conectados.
+- Mapa OpenStreetMap mediante osmdroid, sin API key ni método de pago.
 - Marcadores personalizados con foto o inicial; no se usan marcadores predeterminados.
 - Polyline del recorrido propio y de cada usuario en línea.
 - Eliminación de marcador y polyline al desconectarse.
@@ -26,7 +27,7 @@ Aplicación Android mono-usuario para registro, autenticación y visualización 
 
 ## Puesta en marcha
 
-Siga [CONFIGURACION_FIREBASE.md](CONFIGURACION_FIREBASE.md), configure Firebase, Cloudinary y Google Maps, sincronice Gradle y ejecute `app` en un teléfono o emulador con Google Play Services.
+Siga [CONFIGURACION_FIREBASE.md](CONFIGURACION_FIREBASE.md), configure Firebase y Cloudinary, sincronice Gradle y ejecute `app` en un teléfono o emulador con Google Play Services.
 
 ## Verificación
 

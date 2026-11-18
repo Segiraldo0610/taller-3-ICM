@@ -1,4 +1,4 @@
-# Configuración de Firebase, Cloudinary y Google Maps
+# Configuración de Firebase, Cloudinary y OpenStreetMap
 
 El código compila sin credenciales y muestra una pantalla de configuración. Para ejecutar todas las funciones se requieren los siguientes pasos una sola vez.
 
@@ -37,19 +37,9 @@ CLOUDINARY_UPLOAD_PRESET=SU_PRESET_UNSIGNED
 
 No agregue `api_key` ni `api_secret` a la aplicación. La foto se sube directamente desde Android mediante el preset unsigned y Firestore guarda únicamente la URL HTTPS resultante.
 
-## 3. Google Maps
+## 3. OpenStreetMap
 
-1. Abra Google Cloud Console para el mismo proyecto.
-2. Habilite **Maps SDK for Android**.
-3. Cree una API key y restrínjala a aplicaciones Android.
-4. Restrinja el paquete a `com.example.taller3firebase` y agregue la huella SHA-1 de depuración.
-5. En el mismo archivo `secrets.properties` escriba:
-
-```text
-MAPS_API_KEY=SU_API_KEY_REAL
-```
-
-Cloudinary evita la tarjeta para el almacenamiento de fotografías. Google Maps es un servicio separado y puede solicitar una cuenta de facturación para habilitar Maps SDK for Android.
+El mapa utiliza OpenStreetMap mediante osmdroid. No requiere API key, cuenta de Google Cloud ni método de pago. La aplicación configura un identificador propio para solicitar los mosaicos y muestra la atribución de OpenStreetMap dentro del mapa.
 
 No suba `google-services.json` ni `secrets.properties` a un repositorio público; ambos están incluidos en `.gitignore`.
 
