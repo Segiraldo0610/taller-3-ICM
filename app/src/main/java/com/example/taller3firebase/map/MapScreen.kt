@@ -53,9 +53,7 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.CopyrightOverlay
-import org.osmdroid.views.overlay.Marker
-import org.osmdroid.views.overlay.Polyline
+import kotlinx.coroutines.CancellationException
 
 private const val OSM_USER_AGENT = "EnRutaTaller3/1.0 (aplicacion academica Android)"
 private const val OSM_PREFERENCES = "osmdroid"
@@ -90,12 +88,14 @@ fun MapScreen(
         }
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
+            setTilesScaledToDpi(true)
             setMultiTouchControls(true)
             zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
             controller.setZoom(INITIAL_ZOOM)
             controller.setCenter(GeoPoint(BOGOTA_LATITUDE, BOGOTA_LONGITUDE))
         }
     }
+    val overlayRenderer = remember(mapView) { MapOverlayRenderer(mapView) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
@@ -110,9 +110,12 @@ fun MapScreen(
         .filter(String::isNotBlank)
         .distinct()
     LaunchedEffect(photoUrls) {
+        profilePhotos.keys.toList()
+            .filterNot(photoUrls::contains)
+            .forEach(profilePhotos::remove)
         photoUrls.forEach { photoUrl ->
             if (profilePhotos[photoUrl] == null) {
-                val result = runCatching {
+                val result = try {
                     SingletonImageLoader.get(context).execute(
                         ImageRequest.Builder(context)
                             .data(photoUrl)
@@ -120,7 +123,11 @@ fun MapScreen(
                             .allowHardware(false)
                             .build(),
                     )
-                }.getOrNull() as? SuccessResult
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (_: Exception) {
+                    null
+                } as? SuccessResult
                 val bitmap = (result?.image as? BitmapImage)?.bitmap
                 if (bitmap != null) profilePhotos[photoUrl] = bitmap
             }
@@ -201,49 +208,15 @@ fun MapScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .clipToBounds(),
-                update = { map ->
-                    map.overlays.clear()
-                    map.overlays.add(CopyrightOverlay(map.context))
-
-                    layers.asReversed().forEach { layer ->
-                        if (layer.route.size >= 2) {
-                            map.overlays.add(
-                                Polyline(map).apply {
-                                    outlinePaint.color = if (layer.isCurrentUser) currentUserColor else otherUserColor
-                                    outlinePaint.strokeWidth = if (layer.isCurrentUser) 12f else 8f
-                                    setPoints(layer.route.map { point -> GeoPoint(point.latitude, point.longitude) })
-                                },
-                            )
-                        }
-                    }
-
-                    layers.asReversed().forEach { layer ->
-                        val latitude = layer.profile.latitude ?: return@forEach
-                        val longitude = layer.profile.longitude ?: return@forEach
-                        map.overlays.add(
-                            Marker(map).apply {
-                                position = GeoPoint(latitude, longitude)
-                                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                                title = layer.profile.name
-                                icon = ProfileMarkerIconFactory.create(
-                                    context = map.context,
-                                    photo = profilePhotos[layer.profile.photoUrl],
-                                    initial = MapRenderLogic.markerInitial(layer.profile.name),
-                                    isCurrentUser = layer.isCurrentUser,
-                                    currentUserColor = currentUserColor,
-                                    otherUserColor = otherUserColor,
-                                    backgroundColor = markerBackgroundColor,
-                                    textColor = markerTextColor,
-                                )
-                                setOnMarkerClickListener { marker, currentMap ->
-                                    marker.showInfoWindow()
-                                    currentMap.controller.animateTo(marker.position)
-                                    true
-                                }
-                            },
-                        )
-                    }
-                    map.invalidate()
+                update = {
+                    overlayRenderer.render(
+                        layers = layers,
+                        profilePhotos = profilePhotos,
+                        currentUserColor = currentUserColor,
+                        otherUserColor = otherUserColor,
+                        backgroundColor = markerBackgroundColor,
+                        textColor = markerTextColor,
+                    )
                 },
             )
 
@@ -252,7 +225,7 @@ fun MapScreen(
                     text = stringResource(message.stringRes()),
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
+                        .align(Alignment.TopCenter)
                         .padding(16.dp)
                         .background(MaterialTheme.colorScheme.errorContainer, MaterialTheme.shapes.medium)
                         .padding(horizontal = 16.dp, vertical = 12.dp),
